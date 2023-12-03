@@ -4,6 +4,17 @@ fn to_calibration_value(line : &str) -> Result<u8, &str> {
     let mut first_digit: Option<u8> = None;
     let mut last_digit: Option<u8> = None;
 
+    let digit_words: [(u8, &str); 9] =
+        [   (1, "one"),
+            (2, "two"),
+            (3, "three"),
+            (4, "four"),
+            (5, "five"),
+            (6, "six"),
+            (7, "seven"),
+            (8, "eight"),
+            (9, "nine")];
+
     for index_char in line.char_indices() {
         let index = index_char.0;
         let char = index_char.1;
@@ -12,26 +23,14 @@ fn to_calibration_value(line : &str) -> Result<u8, &str> {
         
         if char.is_digit(10) {
             digit = Some(char.to_digit(10).unwrap() as u8);
-        }
-
-        if line[index..].starts_with("one") {
-            digit = Some(1);
-        } else if line[index..].starts_with("two") {
-            digit = Some(2);
-        } else if line[index..].starts_with("three") {
-            digit = Some(3);
-        } else if line[index..].starts_with("four") {
-            digit = Some(4);
-        } else if line[index..].starts_with("five") {
-            digit = Some(5);
-        } else if line[index..].starts_with("six") {
-            digit = Some(6);
-        } else if line[index..].starts_with("seven") {
-            digit = Some(7);
-        } else if line[index..].starts_with("eight") {
-            digit = Some(8);
-        } else if line[index..].starts_with("nine") {
-            digit = Some(9);
+        } else {
+            for digit_word in digit_words {
+                // for word (i.e. "one") ...
+                if line[index..].starts_with(digit_word.1) {
+                    // set digit to the corresponding digit value (i.e. 1)
+                    digit = Some(digit_word.0);
+                }
+            }
         }
 
         if let Some(digit) = digit {
