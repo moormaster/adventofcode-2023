@@ -1,5 +1,25 @@
 use adventofcode_2023::input_helper;
 
+pub fn main() -> std::io::Result<()> {
+    let lines = input_helper::read_lines("input/day01")?;
+    let sum_part1: u32 = 
+    lines.into_iter()
+        .map(|line| { process_line_part1(&line.unwrap()).unwrap() as u32 } )
+        .sum();
+
+    println!("part1: {sum_part1}");
+
+    let lines = input_helper::read_lines("input/day01")?;
+    let sum_part2: u32 = 
+        lines.into_iter()
+            .map(|line| { process_line_part2(&line.unwrap()).unwrap() as u32 } )
+            .sum();
+
+    println!("part2: {sum_part2}");
+
+    Ok(())
+}
+
 fn process_line_part1(line : &str) -> Result<u8, &str> {
     let mut first_digit: Option<u8> = None;
     let mut last_digit: Option<u8> = None;
@@ -74,26 +94,6 @@ fn process_line_part2(line : &str) -> Result<u8, &str> {
     } else {
         Err("no digits")
     }
-}
-
-pub fn main() -> std::io::Result<()> {
-    let lines = input_helper::read_lines("input/day01")?;
-    let sum_part1: u32 = 
-    lines.into_iter()
-        .map(|line| { process_line_part1(&line.unwrap()).unwrap() as u32 } )
-        .sum();
-
-    println!("part1: {sum_part1}");
-
-    let lines = input_helper::read_lines("input/day01")?;
-    let sum_part2: u32 = 
-        lines.into_iter()
-            .map(|line| { process_line_part2(&line.unwrap()).unwrap() as u32 } )
-            .sum();
-
-    println!("part2: {sum_part2}");
-
-    Ok(())
 }
 
 #[cfg(test)]
