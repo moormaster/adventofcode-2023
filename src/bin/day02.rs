@@ -20,6 +20,7 @@ struct CubeCount {
 #[derive(PartialEq)]
 pub struct Game {
     id: u32,
+    power_of_minimal_set: u32,
     is_possible: bool
 }
 
@@ -42,7 +43,14 @@ fn main() -> Result<()> {
         })
         .sum();
 
+    let sum_of_power_of_minimal_sets: u32 = games.iter()
+        .map(|game| {
+            game.power_of_minimal_set
+        })
+        .sum();
+
     println!("part1: {sum_of_possible_game_ids}");
+    println!("part2: {sum_of_power_of_minimal_sets}");
 
     Ok(())
 }
@@ -63,7 +71,13 @@ fn process_line(line: &str) -> Game {
     let sets = parse_sets(sets_part);
     let is_game_possible = is_game_possible(&sets, limit);
 
-    Game { id: game_id, is_possible: is_game_possible }
+    let minimal_required_set = get_minimal_required_set(&sets);
+    let power_of_minimal_set = 
+        minimal_required_set.blue 
+        * minimal_required_set.green 
+        * minimal_required_set.red;
+
+    Game { id: game_id, is_possible: is_game_possible, power_of_minimal_set: power_of_minimal_set }
 }
 
 fn is_game_possible(sets: &[CubeCount], limit: CubeCount) -> bool {
@@ -247,6 +261,22 @@ mod test {
             assert!(
                 !process_line("Game 1: 14 blue; 13 green; 13 red").is_possible,
                 "impossible game with three subsets"
+            );
+        }
+
+        #[test]
+        fn it_calculates_power_of_minimal_set() {
+
+            assert_eq!(
+                1*1*1,
+                process_line("Game 1: 1 blue, 1 green, 1 red").power_of_minimal_set,
+                "Game consisting of a single set"
+            );
+
+            assert_eq!(
+                3*4*5,
+                process_line("Game 1: 3 blue, 1 green, 1 red; 1 blue, 4 green, 1 red; 1 blue, 1 green, 5 red").power_of_minimal_set,
+                "Game consisting of three sets"
             );
         }
     }
