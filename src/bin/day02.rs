@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     let lines = input_helper::read_lines("input/day02")?;
     let games: Vec<Game> = lines.into_iter()
         .map(|line| {
-            process_line_part1(&line.unwrap())
+            process_line(&line.unwrap())
         })
         .collect();
 
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_line_part1(line: &str) -> Game {
+fn process_line(line: &str) -> Game {
     let limit = 
         CubeCount { 
             blue: 14,
@@ -60,7 +60,8 @@ fn process_line_part1(line: &str) -> Game {
     let sets_part = game_and_sets.next().expect("line is missing separator ': '");
 
     let game_id = parse_game_id(game_part);
-    let is_game_possible = is_game_possible(&parse_sets(sets_part), limit);
+    let sets = parse_sets(sets_part);
+    let is_game_possible = is_game_possible(&sets, limit);
 
     Game { id: game_id, is_possible: is_game_possible }
 }
@@ -200,58 +201,51 @@ mod test {
         }
     }
 
-    mod process_line_part1 {
-        use crate::Game;
-        use crate::process_line_part1;
+    mod process_line {
+        use crate::process_line;
 
         #[test]
         fn it_parses_game_id() {
             assert_eq!(
-                Game { id: 23, is_possible: true }, 
-                process_line_part1("Game 23: "),
+                23,
+                process_line("Game 23: ").id,
                 "Game 23"
             );
             assert_eq!(
-                Game { id: 42, is_possible: true }, 
-                process_line_part1("Game 42: "),
+                42,
+                process_line("Game 42: ").id,
                 "Game 42"
             );
         }
 
         #[test]
         fn it_recognizes_possible_games() {
-            assert_eq!(
-                Game { id: 1, is_possible: true }, 
-                process_line_part1("Game 1: 14 blue, 13 green, 12 red"),
+            assert!(
+                process_line("Game 1: 14 blue, 13 green, 12 red").is_possible,
                 "possible game with one subset"
             );
-            assert_eq!(
-                Game { id: 1, is_possible: true }, 
-                process_line_part1("Game 1: 14 blue; 13 green; 12 red"),
+            assert!(
+                process_line("Game 1: 14 blue; 13 green; 12 red").is_possible,
                 "possible game with three subsets"
             );
         }
 
         #[test]
         fn it_recognizes_impossible_games() {
-            assert_eq!(
-                Game { id: 1, is_possible: false }, 
-                process_line_part1("Game 1: 15 blue"),
+            assert!(
+                !process_line("Game 1: 15 blue").is_possible,
                 "impossible game with too many blue cubes"
             );
-            assert_eq!(
-                Game { id: 1, is_possible: false }, 
-                process_line_part1("Game 1: 14 green"),
+            assert!(
+                !process_line("Game 1: 14 green").is_possible,
                 "impossible game with too many green cubes"
             );
-            assert_eq!(
-                Game { id: 1, is_possible: false }, 
-                process_line_part1("Game 1: 13 red"),
+            assert!(
+                !process_line("Game 1: 13 red").is_possible,
                 "impossible game with too many red cubes"
             );
-            assert_eq!(
-                Game { id: 1, is_possible: false }, 
-                process_line_part1("Game 1: 14 blue; 13 green; 13 red"),
+            assert!(
+                !process_line("Game 1: 14 blue; 13 green; 13 red").is_possible,
                 "impossible game with three subsets"
             );
         }
