@@ -8,6 +8,8 @@ enum Cube {
     Red(u32)
 }
 
+#[derive(Debug)]
+#[derive(PartialEq)]
 struct CubeCount {
     blue: u32,
     green: u32,
@@ -23,11 +25,14 @@ pub struct Game {
 
 fn main() -> Result<()> {
     let lines = input_helper::read_lines("input/day02")?;
-
-    let sum_of_possible_game_ids: u32 = lines.into_iter()
+    let games: Vec<Game> = lines.into_iter()
         .map(|line| {
-            let game = process_line_part1(&line.unwrap());
+            process_line_part1(&line.unwrap())
+        })
+        .collect();
 
+    let sum_of_possible_game_ids: u32 = games.iter()
+        .map(|game| {
             if game.is_possible {
                 game.id
             }
@@ -61,7 +66,44 @@ fn process_line_part1(line: &str) -> Game {
 }
 
 fn is_game_possible(sets: &[CubeCount], limit: CubeCount) -> bool {
-    let mut max = 
+    let minimal_required_set = get_minimal_required_set(&sets);
+
+    if minimal_required_set.blue > limit.blue {
+        return false;
+    }
+
+    if minimal_required_set.green > limit.green {
+        return false;
+    }
+
+    if minimal_required_set.red > limit.red {
+        return false;
+    }
+
+    return true
+}
+
+fn get_minimal_required_set(sets: &[CubeCount]) -> CubeCount {
+    let minimial_required_cubecounts = 
+        aggregate_cube_counts(
+            sets, 
+            |is_first_element, aggregated_value, value| {
+                if is_first_element {
+                    value
+                } else if aggregated_value < value {
+                    value
+                } else {
+                    aggregated_value
+                }
+            });
+
+    minimial_required_cubecounts
+}
+
+fn aggregate_cube_counts(sets: &[CubeCount], aggregate: impl Fn(bool, u32, u32) -> u32) -> CubeCount {
+    let mut is_first_value = true;
+
+    let mut aggregated_cube = 
         CubeCount{
             blue: 0,
             green: 0,
@@ -69,32 +111,14 @@ fn is_game_possible(sets: &[CubeCount], limit: CubeCount) -> bool {
         };
 
     for set in sets {
-        if set.blue > max.blue {
-            max.blue = set.blue;
-        }
+        aggregated_cube.blue = aggregate(is_first_value, aggregated_cube.blue, set.blue);
+        aggregated_cube.green = aggregate(is_first_value, aggregated_cube.green, set.green);
+        aggregated_cube.red = aggregate(is_first_value, aggregated_cube.red, set.red);
 
-        if set.green > max.green {
-            max.green = set.green;
-        }
-        
-        if set.red > max.red {
-            max.red = set.red;
-        }
+        is_first_value = false;
     }
 
-    if max.blue > limit.blue {
-        return false;
-    }
-
-    if max.green > limit.green {
-        return false;
-    }
-
-    if max.red > limit.red {
-        return false;
-    }
-
-    return true
+    return aggregated_cube;
 }
 
 fn parse_game_id(game_part: &str) -> u32 {
@@ -160,6 +184,22 @@ fn parse_cube(cube_part: &str) -> Cube {
 
 #[cfg(test)]
 mod test {
+    mod get_minimal_required_set {
+        use crate::{get_minimal_required_set, CubeCount};
+
+        #[test]
+        fn it_determines_the_min_required_cube_counts_per_color() {
+            assert_eq!(
+                CubeCount { blue: 3, green: 4, red: 5 },
+                get_minimal_required_set(&[
+                    CubeCount { blue: 3, green: 1, red: 1 },
+                    CubeCount { blue: 1, green: 4, red: 1 },
+                    CubeCount { blue: 1, green: 1, red: 5 },
+                ])
+            );
+        }
+    }
+
     mod process_line_part1 {
         use crate::Game;
         use crate::process_line_part1;
