@@ -14,17 +14,17 @@ struct ScratchCardGame {
 }
 
 impl ScratchCardGame{
-    pub fn get_number_of_winning_cards(&self) -> usize {
+    pub fn get_number_of_winning_bets(&self) -> usize {
         self.numbers_on_card.iter()
             .filter(|number| self.winning_numbers.contains(number))
             .count()
     }
 
     pub fn get_worth(&self) -> usize {
-        let number_of_winning_cards = self.get_number_of_winning_cards();
+        let number_of_winning_bets = self.get_number_of_winning_bets();
 
-        if number_of_winning_cards > 0 {
-            1<<(number_of_winning_cards-1)
+        if number_of_winning_bets > 0 {
+            1<<(number_of_winning_bets-1)
         } else {
             0
         }
