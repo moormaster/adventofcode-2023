@@ -94,21 +94,8 @@ fn parse_game(line: &str) -> io::Result<ScratchCardGame> {
 
     let (winning_numbers, numbers_on_card) = parse_card_numbers(winning_numbers_and_numbers_on_card)?;
 
-    // TODO: is there a shorter way to construct a HashSet from a Vec?
-    let winning_numbers = 
-        {
-            let mut hash_set = HashSet::new();
-            hash_set.extend(winning_numbers);
-            hash_set
-        };
-
-    // TODO: is there a shorter way to construct a BTreeSet from a Vec?
-    let numbers_on_card = 
-        {
-            let mut hash_set = BTreeSet::new();
-            hash_set.extend(numbers_on_card);
-            hash_set
-        };
+    let winning_numbers = HashSet::from_iter(winning_numbers);
+    let numbers_on_card = BTreeSet::from_iter(numbers_on_card);
 
     Ok(
         ScratchCardGame { 
