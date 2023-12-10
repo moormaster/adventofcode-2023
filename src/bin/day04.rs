@@ -5,7 +5,6 @@ use std::io;
 use adventofcode_2023::input_helper::read_lines;
 
 struct ScratchCardGame {
-    id: u32,
     winning_numbers: HashSet<u32>,
 
     // we want to iterate over numbers on card
@@ -34,14 +33,7 @@ impl ScratchCardGame{
 fn main() -> io::Result<()> {
     let lines = read_lines("input/day04").unwrap();
 
-    let mut cards = 
-        Vec::from(
-            [ScratchCardGame {
-               id: 0,
-               winning_numbers: HashSet::new(),
-               numbers_on_card: BTreeSet::new()
-            }; 0]
-        );
+    let mut cards = vec![];
     
     for line in lines {
         let game = parse_game(&line?)?;
@@ -89,7 +81,8 @@ fn calculate_number_of_cards(cards: &Vec<ScratchCardGame>) -> Vec<(usize, &Scrat
 fn parse_game(line: &str) -> io::Result<ScratchCardGame> {
     let mut card_and_numbers = line.split(":");
 
-    let card_id = parse_card_id(card_and_numbers.next().unwrap())?;
+    // skip card id
+    card_and_numbers.next();
 
     let winning_numbers_and_numbers_on_card =
         card_and_numbers
@@ -119,45 +112,10 @@ fn parse_game(line: &str) -> io::Result<ScratchCardGame> {
 
     Ok(
         ScratchCardGame { 
-            id: card_id,
             winning_numbers,
             numbers_on_card
         }
     )
-}
-
-fn parse_card_id(line_part: &str) -> io::Result<u32> {
-    let mut card_and_id = 
-        line_part
-            .split(" ")
-            .filter(|token|
-                token
-                    .chars()
-                    .count() > 0
-            );
-    if card_and_id.next().unwrap() != "Card" {
-        return Err(io::Error::new(io::ErrorKind::Other, "Line is expected to start with 'Card'"));
-    }
-
-    let card_id_str = 
-        card_and_id
-            .next()
-            .ok_or( io::Error::new(
-                            io::ErrorKind::Other, 
-                            format!("Missing separator ' ' between 'Card' and id: '{}'", line_part)
-                    ) )?;
-
-    let card_id = 
-        card_id_str
-            .parse::<u32>()
-            .map_err( |_| 
-                        io::Error::new(
-                            io::ErrorKind::Other,
-                            format!("Failed to parse id: '{card_id_str}'")
-                        )
-                    )?;
-
-    Ok(card_id)
 }
 
 fn parse_card_numbers(line_part: &str) -> io::Result<(Vec<u32>, Vec<u32>)> {
@@ -200,23 +158,6 @@ mod test {
         use std::collections::{HashSet, BTreeSet};
 
         use crate::parse_game;
-
-        #[test]
-        fn it_should_parse_card_id() {
-            assert_eq!(
-                100,
-
-                parse_game("Card 100: |").unwrap().id,
-                "card id"
-            );
-
-            assert_eq!(
-                1,
-
-                parse_game("Card   1: |").unwrap().id,
-                "indented card id"
-            );
-        }
 
         #[test]
         fn it_should_parse_winning_numbers() {
