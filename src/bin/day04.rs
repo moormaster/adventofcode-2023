@@ -34,20 +34,56 @@ impl ScratchCardGame{
 fn main() -> io::Result<()> {
     let lines = read_lines("input/day04").unwrap();
 
-    let mut card_worths = vec![0usize; 0];
+    let mut cards = 
+        Vec::from(
+            [ScratchCardGame {
+               id: 0,
+               winning_numbers: HashSet::new(),
+               numbers_on_card: BTreeSet::new()
+            }; 0]
+        );
+    
     for line in lines {
         let game = parse_game(&line?)?;
         
-        card_worths.push(game.get_worth())
+        cards.push(game);
     }
+
+    let cards_count_and_worth = calculate_number_of_cards(&cards);
 
     println!(
         "Part 1: {}",
-        card_worths
+        cards
             .iter()
+            .map( |game| game.get_worth() )
             .sum::<usize>());
 
+    println!(
+      "Part 2: {}",
+      cards_count_and_worth
+        .iter()
+        .map( |count_and_card| count_and_card.0 )
+        .sum::<usize>());
+
     Ok(())
+}
+
+fn calculate_number_of_cards(cards: &Vec<ScratchCardGame>) -> Vec<(usize, &ScratchCardGame)> {
+    let mut count_and_cards = vec![];
+
+    for card in cards {
+        count_and_cards.push((1, card));
+    }
+
+    for i in 0..cards.len() {
+        let worth = cards[i].get_number_of_winning_bets();
+
+        for j in i+1..i+1+worth {
+            count_and_cards[j].0 += count_and_cards[i].0;
+        }
+    }
+
+    count_and_cards
 }
 
 fn parse_game(line: &str) -> io::Result<ScratchCardGame> {
