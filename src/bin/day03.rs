@@ -21,111 +21,107 @@ enum AstItem {
 fn main() -> io::Result<()>{
     let mut lines = input_helper::read_lines("input/day03").unwrap();
 
-    let first_line = lines.next().unwrap().unwrap();
-    let second_line = lines.next().unwrap().unwrap();
+    let items_from_first_line = parse_line(&lines.next().unwrap().unwrap())?;
+    let items_from_second_line = parse_line(&lines.next().unwrap().unwrap())?;
 
     let mut part_numbers = vec![];
 
-    let mut line_above: Option<String> = None;
-    let mut line = first_line;
-    let mut line_below = Some(second_line);
+    let mut items_above: Option<Vec<ParsedItem>> = None;
+    let mut items = items_from_first_line;
+    let mut items_below = Some(items_from_second_line);
 
-    part_numbers.append(&mut get_part_numbers(None, &line, line_below.as_deref())?);
+    part_numbers.append(&mut get_part_numbers(None, &items, items_below.as_ref())?);
 
 
     for line_read in lines {
         {
-            if let Some(line_below) = line_below {
-                    line_above = Some(line);
-                    line = line_below;
+            if let Some(items_below) = items_below {
+                    items_above = Some(items);
+                    items = items_below;
             }
         }
-        line_below = Some(line_read.unwrap());
+        items_below = Some(parse_line(&line_read.unwrap())?);
         
-        part_numbers.append(&mut get_part_numbers(line_above.as_deref(), &line, line_below.as_deref())?);
+        part_numbers.append(&mut get_part_numbers(items_above.as_ref(), &items, items_below.as_ref())?);
     }
 
     {
-        if let Some(line_below) = line_below {
-                line_above = Some(line);
-                line = line_below;
+        if let Some(items_below) = items_below {
+                items_above = Some(items);
+                items = items_below;
         }
     }
-    part_numbers.append(&mut get_part_numbers(line_above.as_deref(), &line, None)?);
+    part_numbers.append(&mut get_part_numbers(items_above.as_ref(), &items, None)?);
 
     println!("Part 1: {}", part_numbers.into_iter().sum::<u32>());
 
     Ok(())
 }
 
-fn get_part_numbers(line_above: Option<&str>, line: &str, line_below: Option<&str>) -> io::Result<Vec<u32>> {
-    let line_above_len: usize = 
-        if let Some(line_above) = line_above {
-            line_above.len()
-        } else {
-            0
-        };
-    let line_len: usize = line.len();
-    let line_below_len: usize = 
-        if let Some(line_below) = line_below {
-            line_below.len()
-        } else {
-            0
-        };
-
+fn get_part_numbers(items_above: Option<&Vec<ParsedItem>>, items: &Vec<ParsedItem>, items_below: Option<&Vec<ParsedItem>>) -> io::Result<Vec<u32>> {
     let mut values = vec![];
-    let parsed_items = parse_line(&line)?;
+    let mut items = items.iter().peekable();
 
-    for parsed_item in parsed_items {
+    let mut item_before: Option<&ParsedItem> = None;
+    let mut item = items.next();
+    let mut item_behind = items.next();
+
+    while item.is_some() {
         let mut has_adjacent_symbol = false;
+        let surrounding_range = get_surrounding_range(&item.unwrap().range);
 
         // check for adjacent symbol in line above
-        if let Some(line_above) = line_above {
-            let surrounding_range = 
-                get_surrounding_range(&parsed_item.range, 0..line_above_len);
-            
-            if line_above.get(surrounding_range).unwrap().chars().any(|char| is_symbol(char)) {
-                has_adjacent_symbol = true;
+        if let Some(items_above) = items_above {
+            for item_above in items_above {
+                match item_above {
+                    ParsedItem{ value: AstItem::Symbol { value: _ }, range } => {
+                        if surrounding_range.contains(&range.start) || surrounding_range.contains(&(range.end-1)) {
+                            has_adjacent_symbol = true;
+                        }
+                    },
+                    _ => {}
+                }
             }
         };
 
         // check for adjacent symbols in current line
-        let surrounding_range = 
-            get_surrounding_range(&parsed_item.range, 0..line_len);
-        let chars_iterator = line.chars();
-        let mut chars_iterator = chars_iterator.skip(surrounding_range.start);
-        
-        if parsed_item.range.start > 0 {
-            if let Some(c) = chars_iterator.next() {
-                if is_symbol(c) {
-                    has_adjacent_symbol = true;
-                }
+        if let Some(item_before) = item_before {
+            if let ParsedItem { range: _, value: AstItem::Symbol { value: _ } } = item_before {
+                has_adjacent_symbol = true;
             }
         }
 
-        let mut chars_iterator = chars_iterator.skip(parsed_item.range.len());
-
-        if let Some(c) = chars_iterator.next() {
-            if is_symbol(c) {
+        if let Some(item_behind) = item_behind {
+            if let ParsedItem { range: _, value: AstItem::Symbol { value: _ } } = item_behind {
                 has_adjacent_symbol = true;
             }
         }
 
         // check for adjacent symbol in line below
-        if let Some(line_below) = line_below {
-            let surrounding_range = 
-                get_surrounding_range(&parsed_item.range, 0..line_below_len);
-            
-                if line_below.get(surrounding_range).unwrap().chars().any(|char| is_symbol(char)) {
-                    has_adjacent_symbol = true;
+        if let Some(items_below) = items_below {
+            for item_below in items_below {
+                match item_below {
+                    ParsedItem{ value: AstItem::Symbol { value: _ }, range } => {
+                        if surrounding_range.contains(&range.start) || surrounding_range.contains(&(range.end-1)) {
+                            has_adjacent_symbol = true;
+                        }
+                    },
+                    _ => {}
                 }
+            }
         };
 
         if has_adjacent_symbol {
-            if let AstItem::Number { value: parsed_number } = parsed_item.value {
+            if let AstItem::Number { value: parsed_number } = item.unwrap().value {
                 values.push(parsed_number);
             }
         }
+
+        // advance variables for item before, current item, item behind
+        item_before = item;
+        item = item_behind;
+        // ... and read next item in line
+        item_behind = items.next();
     }
 
     Ok(values)
@@ -135,10 +131,10 @@ fn is_symbol(c: char) -> bool {
     !c.is_digit(10) && c != '.'
 }
 
-fn get_surrounding_range(range: &Range<usize>, bounds: Range<usize>) -> Range<usize> {
+fn get_surrounding_range(range: &Range<usize>) -> Range<usize> {
     Range { 
-        start: if range.start > bounds.start { range.start-1 } else { bounds.start },
-        end: if range.end < bounds.end { range.end+1 } else { bounds.end }
+        start: if range.start > 0 { range.start-1 } else { 0 },
+        end: range.end+1
     }
 }
 
@@ -277,7 +273,7 @@ mod test
     }
 
     mod get_part_numbers {
-        use crate::get_part_numbers;
+        use crate::{get_part_numbers, parse_line};
 
         #[test]
         fn it_returns_numbers_adjacent_to_a_symbol() {
@@ -286,7 +282,7 @@ mod test
 
                 get_part_numbers(
                     None,
-                    "2",
+                    &parse_line("2").unwrap(),
                     None
                 ).unwrap(),
                 "single non-part number"
@@ -297,7 +293,7 @@ mod test
 
                 get_part_numbers(
                     None,
-                    "*2",
+                    &parse_line("*2").unwrap(),
                     None
                 ).unwrap(),
                 "single part number"
@@ -308,7 +304,7 @@ mod test
 
                 get_part_numbers(
                     None,
-                    "1.2*3.4",
+                    &parse_line("1.2*3.4").unwrap(),
                     None
                 ).unwrap(),
                 "single line with multiple numbers"
@@ -318,9 +314,9 @@ mod test
                 vec![1, 3],
 
                 get_part_numbers(
-                    Some(   "......*"),
-                            ".1.2.3.",
-                    Some(   "$......")
+                    Some(   &parse_line("......*").unwrap()),
+                            &parse_line(".1.2.3.").unwrap(),
+                    Some(   &parse_line("$......").unwrap())
                 ).unwrap(),
                 "multiple lines with some part numbers"
             );
