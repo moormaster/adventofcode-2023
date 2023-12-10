@@ -21,37 +21,24 @@ enum AstItem {
 fn main() -> io::Result<()>{
     let mut lines = input_helper::read_lines("input/day03").unwrap();
 
-    let items_from_first_line = parse_line(&lines.next().unwrap().unwrap())?;
-    let items_from_second_line = parse_line(&lines.next().unwrap().unwrap())?;
+    let items_from_first_line = parse_line(&lines.next().unwrap()?)?;
+    let items_from_second_line = parse_line(&lines.next().unwrap()?)?;
 
     let mut part_numbers = vec![];
 
     let mut items_above: Option<Vec<ParsedItem>> = None;
-    let mut items = items_from_first_line;
+    let mut items = Some(items_from_first_line);
     let mut items_below = Some(items_from_second_line);
 
-    part_numbers.append(&mut get_part_numbers(None, &items, items_below.as_ref())?);
+    while items.is_some() {
+        part_numbers.append(&mut get_part_numbers(items_above.as_ref(), items.as_ref().unwrap(), items_below.as_ref())?);
 
-
-    for line_read in lines {
-        {
-            if let Some(items_below) = items_below {
-                    items_above = Some(items);
-                    items = items_below;
-            }
-        }
-        items_below = Some(parse_line(&line_read.unwrap())?);
-        
-        part_numbers.append(&mut get_part_numbers(items_above.as_ref(), &items, items_below.as_ref())?);
+        items_above = items;
+        items = items_below;
+        items_below = lines.next()
+                        .and_then(|line_read| {line_read.ok()})
+                        .and_then(|line_read| {parse_line(&line_read).ok()});
     }
-
-    {
-        if let Some(items_below) = items_below {
-                items_above = Some(items);
-                items = items_below;
-        }
-    }
-    part_numbers.append(&mut get_part_numbers(items_above.as_ref(), &items, None)?);
 
     println!("Part 1: {}", part_numbers.into_iter().sum::<u32>());
 
@@ -60,7 +47,7 @@ fn main() -> io::Result<()>{
 
 fn get_part_numbers(items_above: Option<&Vec<ParsedItem>>, items: &Vec<ParsedItem>, items_below: Option<&Vec<ParsedItem>>) -> io::Result<Vec<u32>> {
     let mut values = vec![];
-    let mut items = items.iter().peekable();
+    let mut items = items.iter();
 
     let mut item_before: Option<&ParsedItem> = None;
     let mut item = items.next();
