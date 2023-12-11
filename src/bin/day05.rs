@@ -19,6 +19,12 @@ struct MapRange {
     length: u32
 }
 
+#[derive(Debug)]
+struct Range {
+    start: u32,
+    length: u32
+}
+
 fn main() -> io::Result<()> {
     let lines: Vec<String> = 
         read_lines("input/day05")
@@ -56,7 +62,7 @@ impl Map {
         self.ranges
             .iter()
             .filter(
-                |map_range| index >= map_range.source && index - map_range.source < map_range.length
+                |map_range| map_range.get_source_range().contains(index)
             )
             .next()
             .and_then( |map_range| Some(map_range.index(index)) )
@@ -68,11 +74,21 @@ impl Map {
 impl MapRange {
     fn index(&self, index: u32) -> u32 {
         
-        if index < self.source || index - self.source >= self.length {
+        if !self.get_source_range().contains(index) {
             panic!("Index {} out of range for MapRange", index);
         }
 
         self.destination + (index - self.source)
+    }
+
+    fn get_source_range(&self) -> Range {
+        Range { start: self.source, length: self.length }
+    }
+}
+
+impl Range {
+    fn contains(&self, value: u32) -> bool {
+        value >= self.start && value - self.start < self.length
     }
 }
 
