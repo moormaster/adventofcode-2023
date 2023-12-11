@@ -137,6 +137,8 @@ fn process_map(lines: &mut dyn Iterator<Item = String>) -> Option<Map> {
         );
     }
 
+    map.ranges.sort_by_key(|range| range.source);
+
     if map.ranges.len() > 0 {
         Some(map)
     } else {
