@@ -14,9 +14,9 @@ struct Map {
 
 #[derive(Debug)]
 struct MapRange {
-    source: u64,
-    destination: u64,
-    length: u64
+    source: u32,
+    destination: u32,
+    length: u32
 }
 
 fn main() -> io::Result<()> {
@@ -40,7 +40,7 @@ fn main() -> io::Result<()> {
 }
 
 impl MapChain {
-    fn index(&self, index: u64) -> u64 {
+    fn index(&self, index: u32) -> u32 {
         let mut value = index;
 
         self.maps
@@ -52,11 +52,11 @@ impl MapChain {
 }
 
 impl Map {
-    fn index(&self, index: u64) -> u64 {
+    fn index(&self, index: u32) -> u32 {
         self.ranges
             .iter()
             .filter(
-                |map_range| index >= map_range.source && index < map_range.source + map_range.length
+                |map_range| index >= map_range.source && index - map_range.source < map_range.length
             )
             .next()
             .and_then( |map_range| Some(map_range.index(index)) )
@@ -66,9 +66,9 @@ impl Map {
 }
 
 impl MapRange {
-    fn index(&self, index: u64) -> u64 {
+    fn index(&self, index: u32) -> u32 {
         
-        if index < self.source || index >= self.source + self.length {
+        if index < self.source || index - self.source >= self.length {
             panic!("Index {} out of range for MapRange", index);
         }
 
@@ -76,7 +76,7 @@ impl MapRange {
     }
 }
 
-fn process(lines: Vec<String>) -> (Vec<u64>, MapChain) {
+fn process(lines: Vec<String>) -> (Vec<u32>, MapChain) {
     let mut mapchain = 
         MapChain {
             maps: vec![]
@@ -89,7 +89,7 @@ fn process(lines: Vec<String>) -> (Vec<u64>, MapChain) {
     let seeds = 
         seeds
             .split_whitespace()
-            .map( |seed| seed.parse::<u64>().unwrap() )
+            .map( |seed| seed.parse::<u32>().unwrap() )
             .collect();
     let empty_line = lines.next().unwrap();
     if empty_line != "" {
@@ -124,9 +124,9 @@ fn process_map(lines: &mut dyn Iterator<Item = String>) -> Option<Map> {
         let source = items.next().expect(&format!("source not present in range: {}", line));
         let length = items.next().expect(&format!("length not present in range: {}", line));
 
-        let destination = destination.parse::<u64>().unwrap();
-        let source = source.parse::<u64>().unwrap();
-        let length = length.parse::<u64>().unwrap();
+        let destination = destination.parse::<u32>().unwrap();
+        let source = source.parse::<u32>().unwrap();
+        let length = length.parse::<u32>().unwrap();
 
         map.ranges.push(
             MapRange { 
