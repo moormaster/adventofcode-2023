@@ -1,4 +1,4 @@
-use std::{cmp, io, fmt::Display, str::FromStr};
+use std::{cmp::{self, Ordering}, io, fmt::Display, str::FromStr};
 
 use adventofcode_2023::input_helper::read_lines;
 
@@ -10,7 +10,16 @@ fn main() -> io::Result<()> {
 
     println!(
         "Part 1: {}",
-        process_lines(lines)
+        process_lines(&lines)
+            .iter()
+            .enumerate()
+            .map( |(pos, e)| (pos+1) as u32 * e.bid )
+            .sum::<u32>()
+    );
+
+    println!(
+        "Part 2: {}",
+        process_lines_part2(&lines)
             .iter()
             .enumerate()
             .map( |(pos, e)| (pos+1) as u32 * e.bid )
@@ -20,7 +29,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn process_lines(lines: Vec<String>) -> Vec<HandAndBid> {
+fn process_lines(lines: &Vec<String>) -> Vec<HandAndBid> {
     let mut hands: Vec<HandAndBid> = lines
         .iter()
         .map( |line| line.parse::<HandAndBid>().expect(&format!("Failed to parse line: '{}'", line)) )
@@ -34,6 +43,49 @@ fn process_lines(lines: Vec<String>) -> Vec<HandAndBid> {
     hands
 }
 
+fn process_lines_part2(lines: &Vec<String>) -> Vec<HandAndBid> {
+    let mut hands: Vec<HandAndBid> = lines
+        .iter()
+        .map( |line| line.parse::<HandAndBid>().expect(&format!("Failed to parse line: '{}'", line)) )
+        .collect();
+
+    let card_comparator_part2 = 
+        |e1: &Card, e2: &Card|
+        {
+            match (e1, e2) {
+                (Card::Jack, Card::Jack) => Ordering::Equal,
+                (Card::Jack, _) => Ordering::Less,
+                (_, Card::Jack) => Ordering::Greater,
+                _ => e1.partial_cmp(&e2).unwrap()
+            }
+        };
+    let hand_comparator_part2 = 
+        |e1: &Hand, e2: &Hand|
+        {
+            let mut ordering_by_element =
+                e1.cards.iter()
+                    .zip(e2.cards.iter())
+                    .map(|(e1, e2)| card_comparator_part2(e1, e2));
+
+            while let Some(ordering) = ordering_by_element.next() {
+                if ordering != Ordering::Equal {
+                    return ordering;
+                }
+            }
+
+            Ordering::Equal
+        };
+
+    let hand_and_bit_comparator_part2 =
+        |e1: &HandAndBid, e2: &HandAndBid| hand_comparator_part2(&e1.hand, &e2.hand);
+
+    hands.sort_by(hand_and_bit_comparator_part2);   // sort by first card, second card, ...
+    hands.sort_by_key(                              // sort by win-type - keeping the order for hands with identical win-type intact
+        |e| e.hand.get_win_type_part2() 
+    );
+
+    hands
+}
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -116,9 +168,50 @@ impl Hand {
         let mut set_of_size_count = [0, 0, 0, 0, 0];
         
         self.cards.iter().cloned().for_each(
-            |card| card_count[(card as usize)-2] += 1 );
+            |card| card_count[card as usize - 2] += 1 );
         card_count.iter()
             .for_each( |card_count| if *card_count > 0 { set_of_size_count[*card_count-1] += 1 } );
+
+        match set_of_size_count {
+            [_, _, _, _, 1] => WinType::FiveOfAKind,
+            [_,_,_,1,_] => WinType::FourOfAKind,
+            [_,1,1,_,_] => WinType::FullHouse,
+            [_,0,1,_,_] => WinType::ThreeOfAKind,
+            [_,2,_,_,_] => WinType::TwoPair,
+            [_,1,0,_,_] => WinType::OnePair,
+            _ => WinType::HighCard
+        }
+    }
+
+    fn get_win_type_part2(&self) -> WinType {
+        // count of 2's, 3's, ..., A's
+        let mut card_count = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0];
+
+        // count of single, pairs, triples, ...
+        let mut set_of_size_count = [0, 0, 0, 0, 0];
+        
+        self.cards.iter().cloned().for_each(
+            |card| card_count[card as usize - 2] += 1 );
+        card_count.iter()
+            .for_each( |card_count| if *card_count > 0 { set_of_size_count[*card_count-1] += 1 } );
+
+        let jack_count = card_count[Card::Jack as usize - 2];
+        if jack_count > 0 && jack_count < 5 {
+            // apply joker count to the highest set
+            let highest_set = 
+                set_of_size_count
+                    .iter()
+                    .enumerate()
+                    .rposition(|(pos, e)| if pos == jack_count-1 { *e > 1 } else { *e > 0 } )
+                    .unwrap();
+
+            // jacks are used to ...
+            set_of_size_count[jack_count-1] -= 1;
+
+            // converted the highest set into a even higher one
+            set_of_size_count[highest_set] -= 1;
+            set_of_size_count[highest_set + jack_count] += 1;
+        }
 
         match set_of_size_count {
             [_, _, _, _, 1] => WinType::FiveOfAKind,
@@ -220,7 +313,7 @@ QQQJA 483";
                 ],
 
                 process_lines(
-                    SAMPLE_INPUT.split("\n").map( &str::to_string ).collect()
+                    &SAMPLE_INPUT.split("\n").map( &str::to_string ).collect()
                 ).iter()
                     .map( |hand| hand.hand.clone() )
                     .collect::<Vec<Hand>>(),
@@ -304,6 +397,166 @@ QQQJA 483";
                     .parse::<Hand>().unwrap()
                     .get_win_type(),
                 "failed to recognize correct win type"
+            );
+        }
+    }
+
+    mod hand_get_win_type_part2 {
+        use crate::{WinType, Hand};
+
+        #[test]
+        fn it_should_determine_the_win_type_for_each_hand() {
+            assert_eq!(
+                WinType::OnePair,
+
+                "32T3K"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::TwoPair,
+
+                "KK677"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::ThreeOfAKind,
+
+                "T5525"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::ThreeOfAKind,
+
+                "TJ525"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with one joker"
+            );
+
+            assert_eq!(
+                WinType::ThreeOfAKind,
+
+                "TJJ25"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with two jokers"
+            );
+
+            assert_eq!(
+                WinType::FullHouse,
+
+                "QQQAA"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::FullHouse,
+
+                "QQJAA"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with one joker"
+            );
+
+            assert_eq!(
+                WinType::FourOfAKind,
+
+                "QQQQ2"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::FourOfAKind,
+
+                "QQQJ2"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with one joker"
+            );
+
+            assert_eq!(
+                WinType::FourOfAKind,
+
+                "QQJJ2"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with two jokers"
+            );
+
+            assert_eq!(
+                WinType::FourOfAKind,
+
+                "QJJJ2"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with three jokers"
+            );
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "22222"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type"
+            );
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "2222J"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with one joker"
+            );   
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "222JJ"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with two jokers"
+            );
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "22JJJ"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with three jokers"
+            );
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "2JJJJ"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with four jokers"
+            );
+
+            assert_eq!(
+                WinType::FiveOfAKind,
+
+                "JJJJJ"
+                    .parse::<Hand>().unwrap()
+                    .get_win_type_part2(),
+                "failed to recognize correct win type for a hand with five jokers"
             );
         }
     }
