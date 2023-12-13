@@ -167,9 +167,7 @@ mod test {
     mod process {
         use crate::process;
 
-        #[test]
-        fn it_should_map_sample_seed_13_to_location_35() {
-            let sample_input: Vec<String> = 
+        const SAMPLE_INPUT: &str = 
 "seeds: 79 14 55 13
 
 seed-to-soil map:
@@ -202,12 +200,17 @@ temperature-to-humidity map:
 
 humidity-to-location map:
 60 56 37
-56 93 4"
+56 93 4";
+
+        #[test]
+        fn it_should_map_sample_seed_13_to_location_35() {
+            let sample_input_lines: Vec<String> = 
+                SAMPLE_INPUT
                 .split("\n")
                 .map( |str| str.to_string() )
                 .collect();
 
-            let (_, seed_to_location_map) = process(sample_input);
+            let (_, seed_to_location_map) = process(sample_input_lines);
             assert_eq!(
                 35,
                 seed_to_location_map.index(13),
