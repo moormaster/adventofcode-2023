@@ -8,7 +8,7 @@ fn main() -> io::Result<()> {
         .map( |line| line.unwrap() )
         .collect();
 
-    let scoreboard = parse_times_and_records(&lines[0], &lines[1]);
+    let scoreboard = parse_times_and_records_part1(&lines[0], &lines[1]);
 
     println!(
         "Part 1: {}",
@@ -25,7 +25,20 @@ fn main() -> io::Result<()> {
                 )
                 .unwrap_or_default()
              )
-             .product::<u32>()
+             .product::<u64>()
+    );
+
+    let scoreboard_record = parse_time_and_record_part2(&lines[0], &lines[1]);
+
+    println!(
+        "Part 1: {}",
+        get_winning_acceleration_ms(scoreboard_record.time_ms, scoreboard_record.distance_record_mm)
+            .and_then(
+                |range| 
+                
+                Some(range.end()-range.start()+1) 
+            )
+            .unwrap_or_default()
     );
 
     Ok(())
@@ -33,19 +46,19 @@ fn main() -> io::Result<()> {
 
 #[derive(Debug)]
 struct ScoreboardRecord {
-    time_ms: u32,
-    distance_record_mm: u32
+    time_ms: u64,
+    distance_record_mm: u64
 }
 
-fn parse_times_and_records(line_time: &str, line_distance_record: &str) -> Vec<ScoreboardRecord> {
-    let times_ms: Vec<u32> = line_time.split_whitespace()
+fn parse_times_and_records_part1(line_time: &str, line_distance_record: &str) -> Vec<ScoreboardRecord> {
+    let times_ms: Vec<u64> = line_time.split_whitespace()
         .skip(1)
-        .map( |value| value.parse::<u32>().unwrap() )
+        .map( |value| value.parse::<u64>().unwrap() )
         .collect();
 
-    let distance_record_mm: Vec<u32> = line_distance_record.split_whitespace()
+    let distance_record_mm: Vec<u64> = line_distance_record.split_whitespace()
         .skip(1)
-        .map( |value| value.parse::<u32>().unwrap() )
+        .map( |value| value.parse::<u64>().unwrap() )
         .collect();
 
     times_ms.iter()
@@ -54,7 +67,26 @@ fn parse_times_and_records(line_time: &str, line_distance_record: &str) -> Vec<S
         .collect()
 }
 
-fn get_winning_acceleration_ms(time_ms: u32, distance_record_mm: u32) -> Option<ops::RangeInclusive<u32>> {
+fn parse_time_and_record_part2(line_time: &str, line_distance_record: &str) -> ScoreboardRecord {
+    let time_ms: u64 = line_time.split_whitespace()
+        .skip(1)
+        .map( |value| value.to_string() )
+        .reduce( |acc, e| acc.to_string() + &e ).unwrap()
+        .parse().unwrap();
+
+    let distance_record_mm: u64 = line_distance_record.split_whitespace()
+        .skip(1)
+        .map( |value| value.to_string() )
+        .reduce( |acc, e| acc.to_string() + &e ).unwrap()
+        .parse().unwrap();
+
+    ScoreboardRecord {
+        time_ms,
+        distance_record_mm
+    }
+}
+
+fn get_winning_acceleration_ms(time_ms: u64, distance_record_mm: u64) -> Option<ops::RangeInclusive<u64>> {
     let mut acceleration_time = 0;
 
     while acceleration_time < time_ms/2 && acceleration_time*(time_ms - acceleration_time) <= distance_record_mm{
