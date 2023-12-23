@@ -172,21 +172,13 @@ fn count_steps_to_simultaneously_reach_nodes_ending_with_z(instructions: &str, m
     )
 }
 
-fn count_steps_until_all_cycles_are_complete(mut cycles: Vec<Cycle>) -> usize {
-    let gcd_of_cycle_sizes = 
-        cycles.iter().fold(cycles[0].size, |acc, e| { gcd(acc, e.size) });
-
-    // advancing all cycles until first cycle is aligned
-    while cycles[0].pos % cycles[0].size > 0 {
-        cycles.iter_mut().for_each(|e| { e.pos = e.pos + 1 });
+fn count_steps_until_all_cycles_are_complete(cycles: Vec<Cycle>) -> usize {
+    let mut least_common_multiple = cycles.first().unwrap().size;
+    for cycle in cycles.iter() {
+        least_common_multiple = lcm(cycle.size, least_common_multiple);
     }
 
-    // advancing all cycles until all cycles are aligned aligned
-    while cycles.iter().any( |e| e.pos % e.size > 0 ) {
-        cycles.iter_mut().for_each(|e| { e.pos = e.pos + gcd_of_cycle_sizes });
-    }
-    
-    cycles.last().unwrap().pos
+    return least_common_multiple;
 }
 
 #[derive(Debug)]
@@ -247,6 +239,10 @@ fn gcd(a: usize, b: usize) -> usize {
     }
 
     a
+}
+
+fn lcm(a: usize, b: usize) -> usize {
+    a / gcd(a,b) * b
 }
 
 #[cfg(test)]
