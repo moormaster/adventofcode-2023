@@ -1,6 +1,6 @@
 use std::io;
 
-use adventofcode_2023::input_helper::{self, read_lines};
+use adventofcode_2023::input_helper::read_lines;
 
 fn main() -> io::Result<()> {
     let lines: Vec<String> = read_lines("input/day09")?.map(|e| e.unwrap()).collect();
@@ -76,14 +76,7 @@ fn discrete_derivatives(numbers: &Vec<isize>) -> Vec<Vec<isize>> {
 }
 
 fn discrete_derivative(numbers: &Vec<isize>) -> Vec<isize> {
-    let mut last_entry = numbers[0];
-    numbers.iter().skip(1).map(
-        |e| { 
-            let diff = *e - last_entry; 
-            last_entry = *e; 
-            diff 
-        })
-        .collect()
+    numbers.windows(2).map(|e| e[1] - e[0]).collect()
 }
 
 #[cfg(test)]
