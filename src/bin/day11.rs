@@ -5,6 +5,7 @@ use adventofcode_2023::input_helper::read_lines;
 fn main() -> io::Result<()> {
     let lines = read_lines("input/day11").unwrap().map(|e| e.unwrap()).collect();
     println!("Part 1: {}", process(&lines, 1));
+    println!("Part 2: {}", process(&lines, 1_000_000));
 
     Ok(())
 }
@@ -117,6 +118,28 @@ mod test {
                         .collect(),
                         
                     2));
+
+            assert_eq!(
+                1030,
+            
+                process(
+                    &SAMPLE_INPUT_1
+                        .lines()
+                        .map(|e| e.to_string())
+                        .collect(),
+                        
+                    10));
+
+            assert_eq!(
+                8410,
+            
+                process(
+                    &SAMPLE_INPUT_1
+                        .lines()
+                        .map(|e| e.to_string())
+                        .collect(),
+                        
+                    100));
         }
     }
 }
