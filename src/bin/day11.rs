@@ -4,12 +4,12 @@ use adventofcode_2023::input_helper::read_lines;
 
 fn main() -> io::Result<()> {
     let lines = read_lines("input/day11").unwrap().map(|e| e.unwrap()).collect();
-    println!("Part 1: {}", process(lines));
+    println!("Part 1: {}", process(&lines, 1));
 
     Ok(())
 }
 
-fn process(lines: Vec<String>) -> usize {
+fn process(lines: &Vec<String>) -> usize {
     let expanded_universe = expand(&lines);
     let galaxies = location_of_galaxies(&expanded_universe);
 
@@ -97,7 +97,7 @@ mod test {
                 374,
             
                 process(
-                    SAMPLE_INPUT_1
+                    &SAMPLE_INPUT_1
                         .lines()
                         .map(|e| e.to_string())
                         .collect()));
