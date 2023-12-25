@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, collections::HashSet};
 
 use adventofcode_2023::input_helper::read_lines;
 
@@ -13,6 +13,13 @@ fn main() -> io::Result<()> {
 }
 
 fn process(map: &Vec<String>) -> usize {
+    let pipe_positions = determine_pipe_tile_positions(map);
+
+    pipe_positions.len() / 2
+}
+
+fn determine_pipe_tile_positions(map: &Vec<String>) -> HashSet<(usize, usize)> {
+    let mut pipe_positions: HashSet<(usize, usize)> = HashSet::new();
     let start_position = 
         map.iter().enumerate()
             .map(|(y, line)| {
@@ -22,11 +29,11 @@ fn process(map: &Vec<String>) -> usize {
             })
             .filter(|e| e.is_some())
             .next().unwrap().unwrap();
+    pipe_positions.insert(start_position.clone());
 
-    let mut distance = 0;
     let mut current_tiles = determine_adjacent_tiles(map, start_position);
-    if current_tiles.len() > 0 {
-        distance += 1;
+    for tile in current_tiles.iter() {
+        pipe_positions.insert(tile.position.clone());
     }
 
     while current_tiles.windows(2).any(|e| e[0].position != e[1].position) {
@@ -34,10 +41,13 @@ fn process(map: &Vec<String>) -> usize {
             current_tiles.iter()
                 .map(|tile| follow_tile(map, tile))
                 .collect();
-        distance += 1;
+
+        for tile in current_tiles.iter() {
+            pipe_positions.insert(tile.position.clone());
+        }
     }
 
-    distance
+    pipe_positions
 }
 
 fn determine_adjacent_tiles(map: &Vec<String>, position: (usize, usize)) -> Vec<Tile>{
